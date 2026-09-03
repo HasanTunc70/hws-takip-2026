@@ -119,7 +119,9 @@
             </div>
         </div>
 
+        <!-- YENİ: MAKİNE DURUŞ / ARIZA AFİŞİ -->
         <div id="downtime-banner" class="downtime-banner"></div>
+        
         <div id="loading" class="loading">Sisteme bağlanılıyor, veriler yükleniyor...</div>
 
         <div id="dashboard">
@@ -176,19 +178,18 @@
             let u = document.getElementById("username").value;
             let p = document.getElementById("password").value;
             
-            // Kullanıcı adı: admin / Şifre: erkon2026 (Bunu sonradan değiştirebilirsiniz)
-            if((u.toLowerCase() === "ibrahim" && p === "911991") || (u.toLowerCase() === "hasan" && p === "Hasan18379246")) {
+            // Kullanıcı adı: admin / Şifre: erkon2026
+            if((u.toLowerCase() === "İbrahim" && p === "911991") || (u.toLowerCase() === "Hasan" && p === "Hasan18379246")) {
                 document.getElementById("login-screen").style.display = "none";
                 document.getElementById("main-app").style.display = "block";
                 isAuth = true;
-                updateDashboard(); // Giris yapilinca verileri yuklemeye basla
+                updateDashboard(); 
                 setInterval(updateDashboard, 5000); 
             } else {
                 document.getElementById("login-error").style.display = "block";
             }
         }
         
-        // Enter tuşu ile giriş yapabilme
         document.getElementById("password").addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -228,7 +229,6 @@
             
             let n = new Date();
             let h = n.getHours();
-            
             let startH = 0;
             if (h >= 0 && h < 8) startH = 0;
             else if (h >= 8 && h < 16) startH = 8;
@@ -243,7 +243,7 @@
         }
 
         function updateDashboard() {
-            if(!isAuth) return; // Giris yapilmamissa veri cekme!
+            if(!isAuth) return; 
             
             const fetchUrl = FIREBASE_URL + "?t=" + new Date().getTime();
             
@@ -280,20 +280,31 @@
                             document.getElementById('a-perf').innerText = hesaplaPerformans(currentKalip, true);
                         } else { document.getElementById('card-a').style.display = 'none'; }
 
-                        // Duruş Kontrolü (120 Saniyeden fazla kalıp basılmazsa)
+                        // ========================================================
+                        // YENİ: MAKİNE DURUŞ / AKTÜEL SİNYAL KONTROLÜ
+                        // ========================================================
+                        let arizaKodu = data.aktifAriza || "";
+                        
                         if (currentKalip !== lastKalipCount) {
                             lastKalipCount = currentKalip;
-                            lastKalipChangeTime = new Date().getTime();
+                            lastKalipChangeTime = new Date().getTime(); // Kalıp artınca sayacı sıfırla
                         }
+                        
                         let timeSinceKalipChange = new Date().getTime() - lastKalipChangeTime;
+                        let dMins = Math.floor(timeSinceKalipChange / 60000); // Kaç dakika geçti?
+                        
                         let statusEl = document.getElementById('connection-status');
                         let statusText = document.getElementById('status-text');
                         let downtimeBanner = document.getElementById('downtime-banner');
                         
-                        let dMins = parseInt(data.durusDakika) || 0;
-                        if (dMins > 3) {
+                        // Makine Arıza Kodu veriyorsa veya 3 Dakikadan fazla kalıp basılmıyorsa DURDU yazar
+                        if (arizaKodu !== "" || dMins >= 3) {
                             downtimeBanner.style.display = 'flex';
-                            downtimeBanner.innerHTML = `⚠️ DİKKAT: MAKİNE DURUŞTA - ${dMins} DAKİKADIR İŞLEM YAPILMIYOR!`;
+                            if (arizaKodu !== "") {
+                                downtimeBanner.innerHTML = `⚠️ DİKKAT: MAKİNE ARIZADA - SİNYAL: ${arizaKodu} (${dMins} DAKİKADIR İŞLEM YAPILMIYOR)`;
+                            } else {
+                                downtimeBanner.innerHTML = `⚠️ DİKKAT: MAKİNE DURUŞTA VEYA MOLADA - ${dMins} DAKİKADIR İŞLEM YAPILMIYOR!`;
+                            }
                             statusEl.className = "status stopped";
                             statusText.innerText = "MAKİNE DURDU";
                         } else {
@@ -364,6 +375,7 @@
                             let rFire = getVal(data.rekor.fire);
                             let rDokum = rKalip - rFire;
                             if(rDokum < 0) rDokum = 0;
+                            
                             let rPerf = hesaplaPerformans(rKalip, false); 
                             
                             let rHtml = `
@@ -389,11 +401,8 @@
                     }
                 })
                 .catch(err => {
-                    let timeSinceLastFetch = new Date().getTime() - lastSuccessfulFetch;
-                    if (timeSinceLastFetch > 10000) {
-                        document.getElementById('connection-status').className = "status offline";
-                        document.getElementById('status-text').innerText = "İNTERNET KOPTU / OFFLINE";
-                    }
+                    document.getElementById('connection-status').className = "status offline";
+                    document.getElementById('status-text').innerText = "İNTERNET KOPTU / OFFLINE";
                 });
         }
     </script>
