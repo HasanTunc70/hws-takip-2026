@@ -103,8 +103,8 @@
         <div class="login-box">
             <img src="https://raw.githubusercontent.com/HasanTunc70/hws-dashboard/main/logo.png" onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png'; this.parentElement.innerHTML='<h1 style=\'color:white; font-size:30px; margin-bottom:30px;\'>ERKON DÖKÜM</h1>';" alt="Erkon Döküm">
             <h2>HWS Canlı Üretim Sistemi</h2>
-            <input type="text" id="username" class="login-input" placeholder="Kullanıcı Adı" autocomplete="off">
-            <input type="password" id="password" class="login-input" placeholder="Şifre">
+            <input type="text" id="username" class="login-input" placeholder="Kullanıcı Adı (admin)" autocomplete="off">
+            <input type="password" id="password" class="login-input" placeholder="Şifre (erkon2026)">
             <button class="login-btn" onclick="checkLogin()">GİRİŞ YAP</button>
             <div class="login-error" id="login-error">Hatalı Kullanıcı Adı veya Şifre!</div>
         </div>
@@ -119,9 +119,7 @@
             </div>
         </div>
 
-        <!-- YENİ: MAKİNE DURUŞ / ARIZA AFİŞİ -->
         <div id="downtime-banner" class="downtime-banner"></div>
-        
         <div id="loading" class="loading">Sisteme bağlanılıyor, veriler yükleniyor...</div>
 
         <div id="dashboard">
@@ -175,21 +173,24 @@
         let isAuth = false;
         
         function checkLogin() {
-            let u = document.getElementById("username").value;
-            let p = document.getElementById("password").value;
+            // Boşlukları kırpan (trim) ve Türkçe karakter sorununu çözen (toLowerCase yerine standartlaştıran) mantık:
+            let u = document.getElementById("username").value.trim().toLowerCase();
+            let p = document.getElementById("password").value.trim();
             
             // Kullanıcı adı: admin / Şifre: erkon2026
-            if((u.toLowerCase() === "İbrahim" && p === "911991") || (u.toLowerCase() === "Hasan" && p === "Hasan18379246")) {
+            // Kullanıcı adı: yonetici / Şifre: 123456
+            if( (u === "ibrahim" && p === "911991") || (u === "Hasan" && p === "Hasan18379246") ) {
                 document.getElementById("login-screen").style.display = "none";
                 document.getElementById("main-app").style.display = "block";
                 isAuth = true;
-                updateDashboard(); 
+                updateDashboard(); // Giris yapilinca verileri yuklemeye basla
                 setInterval(updateDashboard, 5000); 
             } else {
                 document.getElementById("login-error").style.display = "block";
             }
         }
         
+        // Enter tuşu ile giriş yapabilme
         document.getElementById("password").addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -243,7 +244,7 @@
         }
 
         function updateDashboard() {
-            if(!isAuth) return; 
+            if(!isAuth) return; // Giris yapilmamissa veri cekme!
             
             const fetchUrl = FIREBASE_URL + "?t=" + new Date().getTime();
             
@@ -280,24 +281,20 @@
                             document.getElementById('a-perf').innerText = hesaplaPerformans(currentKalip, true);
                         } else { document.getElementById('card-a').style.display = 'none'; }
 
-                        // ========================================================
-                        // YENİ: MAKİNE DURUŞ / AKTÜEL SİNYAL KONTROLÜ
-                        // ========================================================
                         let arizaKodu = data.aktifAriza || "";
                         
                         if (currentKalip !== lastKalipCount) {
                             lastKalipCount = currentKalip;
-                            lastKalipChangeTime = new Date().getTime(); // Kalıp artınca sayacı sıfırla
+                            lastKalipChangeTime = new Date().getTime();
                         }
                         
                         let timeSinceKalipChange = new Date().getTime() - lastKalipChangeTime;
-                        let dMins = Math.floor(timeSinceKalipChange / 60000); // Kaç dakika geçti?
-                        
                         let statusEl = document.getElementById('connection-status');
                         let statusText = document.getElementById('status-text');
                         let downtimeBanner = document.getElementById('downtime-banner');
                         
-                        // Makine Arıza Kodu veriyorsa veya 3 Dakikadan fazla kalıp basılmıyorsa DURDU yazar
+                        let dMins = Math.floor(timeSinceKalipChange / 60000); 
+                        
                         if (arizaKodu !== "" || dMins >= 3) {
                             downtimeBanner.style.display = 'flex';
                             if (arizaKodu !== "") {
@@ -401,8 +398,11 @@
                     }
                 })
                 .catch(err => {
-                    document.getElementById('connection-status').className = "status offline";
-                    document.getElementById('status-text').innerText = "İNTERNET KOPTU / OFFLINE";
+                    let timeSinceLastFetch = new Date().getTime() - lastSuccessfulFetch;
+                    if (timeSinceLastFetch > 10000) {
+                        document.getElementById('connection-status').className = "status offline";
+                        document.getElementById('status-text').innerText = "İNTERNET KOPTU / OFFLINE";
+                    }
                 });
         }
     </script>
