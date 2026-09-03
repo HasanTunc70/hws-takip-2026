@@ -9,6 +9,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: #0f172a; color: #f8fafc; padding: 20px; }
         
+        /* GİRİŞ EKRANI TASARIMI */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0f172a; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .login-box { background-color: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; width: 100%; max-width: 400px; border-top: 4px solid #38bdf8;}
         .login-box img { height: 80px; object-fit: contain; margin-bottom: 30px; }
@@ -82,7 +83,7 @@
         .shift-card { background-color: #1e293b; border-radius: 8px; padding: 18px; border-left: 4px solid #38bdf8; display: flex; flex-direction: column; justify-content: space-between;}
         .shift-card.current { border-left-color: #10b981; background-color: #0f172a; border: 1px solid #10b981;}
         
-        .shift-card.record { border-left-color: #fbbf24; background-color: #0f172a; border: 1px solid #fbbf24; margin-top: 30px;}
+        .shift-card.record { border-left-color: #fbbf24; background-color: #0f172a; border: 1px solid #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.25); margin-top: 30px;}
         .shift-card.record .shift-title { color: #fbbf24; }
         
         .shift-title { font-size: 15px; font-weight: 800; color: #e2e8f0; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center;}
@@ -211,6 +212,9 @@
         let lastSuccessfulFetch = new Date().getTime(); 
         let lastKalipCount = -1;
         let lastKalipChangeTime = new Date().getTime();
+        
+        // Aktif ariza sürelerini local (JavaScript) hafızasında tutmak icin
+        let activeAlertsMemory = {};
 
         function getVardiyaSorumlusu(dateStr, labelStr) {
             const parts = dateStr.split('/');
@@ -250,15 +254,16 @@
             return Math.round((kalipSayisi / effectiveMins) * 60);
         }
 
-        // CANLI KRONOMETRE FONKSİYONU
-        // Eğer arıza devam ediyorsa saniye saniye ekranda "00:05:23" şeklinde sayacak!
+        // KRONOMETRE ZEKASI
+        // Her saniye calisarak activeAlertsMemory'deki baslangic zamanlarindan su anki zamani cikarir
         setInterval(function() {
             if(!isAuth) return;
             const nowUnix = Math.floor(Date.now() / 1000);
-            const timers = document.querySelectorAll('.active-timer');
-            timers.forEach(timer => {
-                let startTs = parseInt(timer.getAttribute('data-start'));
-                if(startTs && startTs > 0) {
+            
+            // Sayfadaki tum aktif sayaç kutularini bul (id'lerine gore)
+            for (const [code, startTs] of Object.entries(activeAlertsMemory)) {
+                let timerEl = document.getElementById("timer-" + code);
+                if(timerEl && startTs > 0) {
                     let diffSeconds = nowUnix - startTs;
                     if (diffSeconds < 0) diffSeconds = 0;
                     
@@ -271,9 +276,9 @@
                         (m < 10 ? "0" + m : m) + ":" + 
                         (s < 10 ? "0" + s : s);
                         
-                    timer.innerText = formatted;
+                    timerEl.innerText = formatted;
                 }
-            });
+            }
         }, 1000);
 
         function updateDashboard() {
@@ -282,7 +287,10 @@
             const fetchUrl = FIREBASE_URL + "?t=" + new Date().getTime();
             
             fetch(fetchUrl)
-                .then(response => response.json())
+                .then(response => {
+                    if(!response.ok) throw new Error("Network Error");
+                    return response.json();
+                })
                 .then(data => {
                     if(data) {
                         lastSuccessfulFetch = new Date().getTime();
@@ -307,41 +315,68 @@
                             document.getElementById('a-kalip').innerText = currentKalip;
                             document.getElementById('a-fire').innerText = aFire;
                             document.getElementById('a-dokum').innerText = aDokum;
-                            
                             document.getElementById('a-perf').innerText = hesaplaPerformans(currentKalip, true);
                         } else { document.getElementById('card-a').style.display = 'none'; }
 
-                        let statusEl = document.getElementById('connection-status');
-                        let statusText = document.getElementById('status-text');
-                        let downtimeBanner = document.getElementById('downtime-banner');
+                        if(data.modelB) {
+                            document.getElementById('card-b').style.display = 'block';
+                            document.getElementById('b-isim').innerText = `${data.modelB.parcaAdi || '-'}`;
+                            document.getElementById('b-kod').innerText = `Kalıp No: ${data.modelB.kalipNo || '-'} | Kod: ${data.modelB.parcaKodu || '-'}`;
+                            document.getElementById('b-hedef').innerText = getVal(data.modelB.hedef);
+                        } else { document.getElementById('card-b').style.display = 'none'; }
                         
-                        if (currentKalip !== lastKalipCount) {
-                            lastKalipCount = currentKalip;
-                            lastKalipChangeTime = new Date().getTime();
-                        }
-                        let timeSinceKalipChange = new Date().getTime() - lastKalipChangeTime;
-                        let dMins = Math.floor(timeSinceKalipChange / 60000); 
+                        if(data.modelC) {
+                            document.getElementById('card-c').style.display = 'block';
+                            document.getElementById('c-isim').innerText = `${data.modelC.parcaAdi || '-'}`;
+                            document.getElementById('c-kod').innerText = `Kalıp No: ${data.modelC.kalipNo || '-'} | Kod: ${data.modelC.parcaKodu || '-'}`;
+                            document.getElementById('c-hedef').innerText = getVal(data.modelC.hedef);
+                        } else { document.getElementById('card-c').style.display = 'none'; }
 
-                        // ARIZALAR KARTI VE CANLI KRONOMETRE TASARIMI
+                        // ==========================================
+                        // ARIZALAR / KRONOMETRE ZEKASI
+                        // ==========================================
                         let alertsCard = document.getElementById('alerts-card');
                         let alertsList = document.getElementById('alerts-list');
+                        let statusEl = document.getElementById('connection-status');
+                        let statusText = document.getElementById('status-text');
                         let hasActiveAlert = false;
+                        
+                        // Her güncellemede hafızayı sıfırlamıyoruz, Firebase'den "Devam Ediyor" (Dauer = 0) 
+                        // gelenler için HTML'i çizerken hafızaya başlangıç zamanını işliyoruz.
                         
                         if(data.arizalar && data.arizalar.length > 0) {
                             alertsCard.style.display = 'block';
                             let html = "";
                             
+                            // Hafızayı tazelemek için geçici liste
+                            let currentActiveCodes = [];
+                            
                             data.arizalar.forEach(ariza => {
-                                // Eger dauer "Devam Ediyor" veya "0" iceriyorsa bu arıza aktiftir!
-                                let isActive = (ariza.dauer.includes("Devam") || ariza.dauer == "0" || ariza.dauer == "");
-                                if(isActive) hasActiveAlert = true;
+                                let codeSafe = ariza.code.replace(/[^a-zA-Z0-9]/g, ""); // Özel karakterleri sil (ID için)
+                                let isActive = (ariza.dauer === "0" || ariza.dauer === "" || ariza.dauer.includes("Devam"));
+                                
+                                if(isActive) {
+                                    hasActiveAlert = true;
+                                    currentActiveCodes.push(codeSafe);
+                                    
+                                    // Eğer bu arıza hafızada yoksa veya Firebase'den VBScript Timestamp yollamadıysa (0 geldiyse)
+                                    // BİZ BURADA (HTML içinde) O ANKİ ZAMANI BAŞLANGIÇ KABUL EDİYORUZ!
+                                    if(!activeAlertsMemory[codeSafe]) {
+                                        let vbsTs = parseInt(ariza.startTs);
+                                        if (vbsTs > 1000000000) {
+                                            activeAlertsMemory[codeSafe] = vbsTs; // VBS'den gelen sağlam timestamp
+                                        } else {
+                                            activeAlertsMemory[codeSafe] = Math.floor(Date.now() / 1000); // Kendi yerel zamanımızı uydurduk!
+                                        }
+                                    }
+                                }
                                 
                                 let alertClass = isActive ? "alert-item active" : "alert-item";
-                                let aCodeName = "⚠️ Sinyal: " + ariza.code; 
+                                let aCodeName = "⚠️ " + ariza.desc; 
                                 
-                                // Aktifse KRONOMETRE koy (data-start ile JS'ye sinyal veriyoruz), Degilse bitis suresini yaz.
+                                // Ekrana ID atıyoruz ki setInterval oraya müdahale edip saysın
                                 let timeHtml = isActive 
-                                    ? `<span class="alert-time active-timer" data-start="${ariza.startTs}">00:00:00</span>`
+                                    ? `<span class="alert-time active-timer" id="timer-${codeSafe}">00:00:00</span>`
                                     : `<span class="alert-time">Bitti (${ariza.dauer})</span>`;
                                     
                                 html += `
@@ -352,9 +387,26 @@
                                 `;
                             });
                             alertsList.innerHTML = html;
+                            
+                            // Artık aktif olmayan arızaları hafızadan sil ki gereksiz çalışmasın
+                            for (let key in activeAlertsMemory) {
+                                if(!currentActiveCodes.includes(key)) {
+                                    delete activeAlertsMemory[key];
+                                }
+                            }
                         } else {
                             alertsCard.style.display = 'none';
+                            activeAlertsMemory = {}; // Arıza yoksa hafızayı toptan boşalt
                         }
+                        
+                        // Makine Kalıp Basmıyor mu? Kontrolü (Arıza yoksa Mola sayar)
+                        if (currentKalip !== lastKalipCount) {
+                            lastKalipCount = currentKalip;
+                            lastKalipChangeTime = new Date().getTime();
+                        }
+                        let timeSinceKalipChange = new Date().getTime() - lastKalipChangeTime;
+                        let dMins = Math.floor(timeSinceKalipChange / 60000); 
+                        let downtimeBanner = document.getElementById('downtime-banner');
                         
                         if (hasActiveAlert) {
                             downtimeBanner.style.display = 'none'; 
@@ -373,20 +425,6 @@
 
                         document.getElementById('last-update').innerText = new Date().toLocaleTimeString('tr-TR');
 
-                        if(data.modelB) {
-                            document.getElementById('card-b').style.display = 'block';
-                            document.getElementById('b-isim').innerText = `${data.modelB.parcaAdi || '-'}`;
-                            document.getElementById('b-kod').innerText = `Kalıp No: ${data.modelB.kalipNo || '-'} | Kod: ${data.modelB.parcaKodu || '-'}`;
-                            document.getElementById('b-hedef').innerText = getVal(data.modelB.hedef);
-                        } else { document.getElementById('card-b').style.display = 'none'; }
-                        
-                        if(data.modelC) {
-                            document.getElementById('card-c').style.display = 'block';
-                            document.getElementById('c-isim').innerText = `${data.modelC.parcaAdi || '-'}`;
-                            document.getElementById('c-kod').innerText = `Kalıp No: ${data.modelC.kalipNo || '-'} | Kod: ${data.modelC.parcaKodu || '-'}`;
-                            document.getElementById('c-hedef').innerText = getVal(data.modelC.hedef);
-                        } else { document.getElementById('card-c').style.display = 'none'; }
-
                         if(data.shifts && data.shifts.length > 0) {
                             let shiftHtml = "";
                             data.shifts.forEach((shift, index) => {
@@ -398,6 +436,7 @@
                                 let vFire = getVal(shift.toplamFire);
                                 let vDokum = vKalip - vFire;
                                 if(vDokum < 0) vDokum = 0;
+                                
                                 let vPerf = hesaplaPerformans(vKalip, isCurrent);
                                 
                                 shiftHtml += `
@@ -463,9 +502,6 @@
                     }
                 });
         }
-
-        updateDashboard();
-        setInterval(updateDashboard, 5000); 
     </script>
 </body>
 </html>
