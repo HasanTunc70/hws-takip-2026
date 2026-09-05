@@ -9,7 +9,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: #0f172a; color: #f8fafc; padding: 20px; }
         
-        /* GİRİŞ EKRANI TASARIMI */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0f172a; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .login-box { background-color: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; width: 100%; max-width: 400px; border-top: 4px solid #38bdf8;}
         .login-box img { height: 80px; object-fit: contain; margin-bottom: 30px; }
@@ -39,17 +38,6 @@
         
         .downtime-banner { display: none; background-color: #ef4444; color: white; padding: 15px; border-radius: 8px; margin-bottom: 25px; font-weight: 800; font-size: 20px; text-align: center; box-shadow: 0 4px 15px rgba(239,68,68,0.4); justify-content: center; align-items: center; gap: 10px;}
         
-        /* AKTÜEL SİNYALLER PANOSU */
-        .alerts-card { background-color: #1e293b; border-radius: 12px; padding: 20px; border-top: 4px solid #ef4444; margin-bottom: 25px;}
-        .alerts-title { font-size: 16px; font-weight: 800; color: #ef4444; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;}
-        .alert-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
-        .alert-item { background-color: #0f172a; padding: 12px 15px; border-radius: 8px; border-left: 4px solid #38bdf8; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; color: #e2e8f0; }
-        
-        /* Aktif Ariza (Canlı Kronometre) */
-        .alert-item.active { border-left-color: #ef4444; background-color: rgba(239, 68, 68, 0.05); }
-        .alert-item.active .alert-time { color: #ef4444; font-weight: 800; font-size: 16px; letter-spacing: 1.5px; font-family: monospace; background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 6px;}
-        .alert-time { color: #94a3b8; font-size: 13px; font-style: italic;}
-        
         .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         
         .card { background-color: #1e293b; border-radius: 12px; padding: 30px 20px 20px 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; overflow: hidden; }
@@ -64,8 +52,8 @@
         .card-title { font-size: 22px; font-weight: 800; color: #e2e8f0; margin-bottom: 5px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .card-subtitle { font-size: 15px; color: #94a3b8; margin-bottom: 25px; }
         
+        /* MODEL KARTLARINDA SADECE 4 KUTU VAR (K/SAAT KALDIRILDI) */
         .stats-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .stats-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
         .stats-grid-1 { display: grid; grid-template-columns: 1fr; gap: 10px; }
         
         .stat-box { background-color: #0f172a; padding: 15px 5px; border-radius: 8px; text-align: center; }
@@ -76,7 +64,6 @@
         .value-kalip { color: #10b981; }
         .value-dokum { color: #f59e0b; }
         .value-hata { color: #ef4444; }
-        .value-perf { color: #a855f7; }
 
         .shift-header { color: #e2e8f0; font-size: 18px; font-weight: 800; margin: 35px 0 15px 0; letter-spacing: 1px; border-bottom: 1px solid #1e293b; padding-bottom: 10px; }
         .shift-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
@@ -122,19 +109,13 @@
     <div id="main-app">
         <div class="header">
             <img src="https://raw.githubusercontent.com/HasanTunc70/hws-dashboard/main/logo.png" onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png'; this.parentElement.innerHTML='<h1 style=\'color:white; font-size:24px;\'>ERKON DÖKÜM</h1>';" alt="Erkon Döküm">
+            
             <div id="connection-status" class="status live">
                 <div class="dot"></div> <span id="status-text">CANLI VERİ</span>
             </div>
         </div>
 
         <div id="downtime-banner" class="downtime-banner"></div>
-        
-        <!-- ARIZALAR KARTI -->
-        <div class="alerts-card" id="alerts-card" style="display:none;">
-            <div class="alerts-title">🚨 AKTÜEL SİNYALLER VE DURUŞLAR</div>
-            <div class="alert-list" id="alerts-list"></div>
-        </div>
-
         <div id="loading" class="loading">Sisteme bağlanılıyor, veriler yükleniyor...</div>
 
         <div id="dashboard">
@@ -143,12 +124,11 @@
                     <div class="badge">KALIPLANAN MODEL</div>
                     <div class="card-title" id="a-isim">-</div>
                     <div class="card-subtitle" id="a-kod">-</div>
-                    <div class="stats-grid-5">
+                    <div class="stats-grid-4">
                         <div class="stat-box"><div class="stat-label">HEDEF</div><div class="stat-value value-hedef" id="a-hedef">0</div></div>
                         <div class="stat-box"><div class="stat-label">KALIP</div><div class="stat-value value-kalip" id="a-kalip">0</div></div>
                         <div class="stat-box"><div class="stat-label">DÖKÜM</div><div class="stat-value value-dokum" id="a-dokum">0</div></div>
                         <div class="stat-box"><div class="stat-label">FİRE</div><div class="stat-value value-hata" id="a-fire">0</div></div>
-                        <div class="stat-box"><div class="stat-label">K/SAAT</div><div class="stat-value value-perf" id="a-perf">0</div></div>
                     </div>
                 </div>
 
@@ -212,9 +192,6 @@
         let lastSuccessfulFetch = new Date().getTime(); 
         let lastKalipCount = -1;
         let lastKalipChangeTime = new Date().getTime();
-        
-        // Aktif ariza sürelerini local (JavaScript) hafızasında tutmak icin
-        let activeAlertsMemory = {};
 
         function getVardiyaSorumlusu(dateStr, labelStr) {
             const parts = dateStr.split('/');
@@ -235,10 +212,14 @@
             return teams[teamIndex];
         }
 
+        // AKILLI VE GERÇEKÇİ K/SAAT (PERFORMANS) HESAPLAYICISI
         function hesaplaPerformans(kalipSayisi, isCurrent) {
             if(!kalipSayisi || kalipSayisi === 0) return 0;
+            
+            // Eğer geçmiş bir vardiyaysa, mola süreleri (30 dk) çıkarılarak net 7.5 saate bölünür.
             if(!isCurrent) return Math.round(kalipSayisi / 7.5);
             
+            // Şu anki (Aktif) Vardiyaysa
             let n = new Date();
             let h = n.getHours();
             let startH = 0;
@@ -247,39 +228,19 @@
             else startH = 16;
             
             let shiftStart = new Date(n.getFullYear(), n.getMonth(), n.getDate(), startH, 0, 0);
-            let elapsedMins = (n - shiftStart) / 60000;
+            
+            // Vardiya başlayalı kaç DAKİKA oldu?
+            let elapsedMins = (n.getTime() - shiftStart.getTime()) / 60000;
             if (elapsedMins < 1) elapsedMins = 1;
             
-            let effectiveMins = elapsedMins * (450 / 480);
-            return Math.round((kalipSayisi / effectiveMins) * 60);
-        }
-
-        // KRONOMETRE ZEKASI
-        // Her saniye calisarak activeAlertsMemory'deki baslangic zamanlarindan su anki zamani cikarir
-        setInterval(function() {
-            if(!isAuth) return;
-            const nowUnix = Math.floor(Date.now() / 1000);
+            // Saat bazlı saf K/Saat formülü
+            let perf = Math.round((kalipSayisi / elapsedMins) * 60);
             
-            // Sayfadaki tum aktif sayaç kutularini bul (id'lerine gore)
-            for (const [code, startTs] of Object.entries(activeAlertsMemory)) {
-                let timerEl = document.getElementById("timer-" + code);
-                if(timerEl && startTs > 0) {
-                    let diffSeconds = nowUnix - startTs;
-                    if (diffSeconds < 0) diffSeconds = 0;
-                    
-                    let h = Math.floor(diffSeconds / 3600);
-                    let m = Math.floor((diffSeconds % 3600) / 60);
-                    let s = diffSeconds % 60;
-                    
-                    let formatted = 
-                        (h < 10 ? "0" + h : h) + ":" + 
-                        (m < 10 ? "0" + m : m) + ":" + 
-                        (s < 10 ? "0" + s : s);
-                        
-                    timerEl.innerText = formatted;
-                }
-            }
-        }, 1000);
+            // Çok uçuk rakamlar vermemesi için (Örn vardiya başlar başlamaz 500 K/Saat göstermesin) makul sınır
+            if (elapsedMins < 15 && perf > 300) perf = "..."; 
+            
+            return perf;
+        }
 
         function updateDashboard() {
             if(!isAuth) return; 
@@ -315,7 +276,6 @@
                             document.getElementById('a-kalip').innerText = currentKalip;
                             document.getElementById('a-fire').innerText = aFire;
                             document.getElementById('a-dokum').innerText = aDokum;
-                            document.getElementById('a-perf').innerText = hesaplaPerformans(currentKalip, true);
                         } else { document.getElementById('card-a').style.display = 'none'; }
 
                         if(data.modelB) {
@@ -333,86 +293,21 @@
                         } else { document.getElementById('card-c').style.display = 'none'; }
 
                         // ==========================================
-                        // ARIZALAR / KRONOMETRE ZEKASI
+                        // MAKİNE DURDU / MOLA ZEKASI 
                         // ==========================================
-                        let alertsCard = document.getElementById('alerts-card');
-                        let alertsList = document.getElementById('alerts-list');
-                        let statusEl = document.getElementById('connection-status');
-                        let statusText = document.getElementById('status-text');
-                        let hasActiveAlert = false;
-                        
-                        // Her güncellemede hafızayı sıfırlamıyoruz, Firebase'den "Devam Ediyor" (Dauer = 0) 
-                        // gelenler için HTML'i çizerken hafızaya başlangıç zamanını işliyoruz.
-                        
-                        if(data.arizalar && data.arizalar.length > 0) {
-                            alertsCard.style.display = 'block';
-                            let html = "";
-                            
-                            // Hafızayı tazelemek için geçici liste
-                            let currentActiveCodes = [];
-                            
-                            data.arizalar.forEach(ariza => {
-                                let codeSafe = ariza.code.replace(/[^a-zA-Z0-9]/g, ""); // Özel karakterleri sil (ID için)
-                                let isActive = (ariza.dauer === "0" || ariza.dauer === "" || ariza.dauer.includes("Devam"));
-                                
-                                if(isActive) {
-                                    hasActiveAlert = true;
-                                    currentActiveCodes.push(codeSafe);
-                                    
-                                    // Eğer bu arıza hafızada yoksa veya Firebase'den VBScript Timestamp yollamadıysa (0 geldiyse)
-                                    // BİZ BURADA (HTML içinde) O ANKİ ZAMANI BAŞLANGIÇ KABUL EDİYORUZ!
-                                    if(!activeAlertsMemory[codeSafe]) {
-                                        let vbsTs = parseInt(ariza.startTs);
-                                        if (vbsTs > 1000000000) {
-                                            activeAlertsMemory[codeSafe] = vbsTs; // VBS'den gelen sağlam timestamp
-                                        } else {
-                                            activeAlertsMemory[codeSafe] = Math.floor(Date.now() / 1000); // Kendi yerel zamanımızı uydurduk!
-                                        }
-                                    }
-                                }
-                                
-                                let alertClass = isActive ? "alert-item active" : "alert-item";
-                                let aCodeName = "⚠️ " + ariza.desc; 
-                                
-                                // Ekrana ID atıyoruz ki setInterval oraya müdahale edip saysın
-                                let timeHtml = isActive 
-                                    ? `<span class="alert-time active-timer" id="timer-${codeSafe}">00:00:00</span>`
-                                    : `<span class="alert-time">Bitti (${ariza.dauer})</span>`;
-                                    
-                                html += `
-                                    <div class="${alertClass}">
-                                        <span>${aCodeName}</span>
-                                        ${timeHtml}
-                                    </div>
-                                `;
-                            });
-                            alertsList.innerHTML = html;
-                            
-                            // Artık aktif olmayan arızaları hafızadan sil ki gereksiz çalışmasın
-                            for (let key in activeAlertsMemory) {
-                                if(!currentActiveCodes.includes(key)) {
-                                    delete activeAlertsMemory[key];
-                                }
-                            }
-                        } else {
-                            alertsCard.style.display = 'none';
-                            activeAlertsMemory = {}; // Arıza yoksa hafızayı toptan boşalt
-                        }
-                        
-                        // Makine Kalıp Basmıyor mu? Kontrolü (Arıza yoksa Mola sayar)
                         if (currentKalip !== lastKalipCount) {
                             lastKalipCount = currentKalip;
                             lastKalipChangeTime = new Date().getTime();
                         }
+                        
                         let timeSinceKalipChange = new Date().getTime() - lastKalipChangeTime;
                         let dMins = Math.floor(timeSinceKalipChange / 60000); 
+                        
+                        let statusEl = document.getElementById('connection-status');
+                        let statusText = document.getElementById('status-text');
                         let downtimeBanner = document.getElementById('downtime-banner');
                         
-                        if (hasActiveAlert) {
-                            downtimeBanner.style.display = 'none'; 
-                            statusEl.className = "status stopped";
-                            statusText.innerText = "MAKİNE ARIZADA";
-                        } else if (dMins >= 3) {
+                        if (dMins >= 3) {
                             downtimeBanner.style.display = 'flex';
                             downtimeBanner.innerHTML = `⚠️ DİKKAT: MAKİNE DURUŞTA VEYA MOLADA - ${dMins} DAKİKADIR İŞLEM YAPILMIYOR!`;
                             statusEl.className = "status stopped";
@@ -466,6 +361,7 @@
                             if (!rSorumlu || rSorumlu === "OTOMATIK_ISIM" || rSorumlu === "Otomatik Hesaplaniyor...") {
                                 rSorumlu = getVardiyaSorumlusu(data.rekor.date, data.rekor.label);
                             }
+                            
                             let rKalip = getVal(data.rekor.kalip);
                             let rFire = getVal(data.rekor.fire);
                             let rDokum = rKalip - rFire;
@@ -502,6 +398,9 @@
                     }
                 });
         }
+
+        updateDashboard();
+        setInterval(updateDashboard, 5000); 
     </script>
 </body>
 </html>
